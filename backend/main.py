@@ -2,12 +2,22 @@ import os
 import sqlite3
 import datetime
 import random
-import requests
+import logging
+from contextlib import asynccontextmanager
 from typing import List, Optional
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
+
+# Try importing google-genai SDK if available
+try:
+    from google import genai
+    from google.genai import types as genai_types
+    GENAI_SDK_AVAILABLE = True
+except ImportError:
+    GENAI_SDK_AVAILABLE = False
 
 try:
     from engine import generate_local_response, analyze_intent
@@ -16,20 +26,9 @@ except ImportError:
 
 load_dotenv()
 
-app = FastAPI(
-    title="MindBridge API",
-    description="Backend service for MindBridge: A Digital Companion Against Drug Addiction",
-    version="1.0.0"
-)
-
-# CORS configuration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("mindbridge")
 
 # SQLite database setup for Anonymous Callback Requests
 DB_PATH = os.path.join(os.path.dirname(__file__), "mindbridge.db")
@@ -53,15 +52,42 @@ def init_db():
     """)
     conn.commit()
     conn.close()
+    logger.info("SQLite callback_requests database initialized successfully.")
 
-try:
+# Lifespan context manager for robust startup/shutdown
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Ensure database and tables exist on startup (avoids cold start issues on Render)
     init_db()
-except Exception as e:
-    print(f"DB Init error (handled): {e}")
+    yield
+
+app = FastAPI(
+    title="MindBridge API",
+    description="Backend service for MindBridge: A Digital Companion Against Drug Addiction",
+    version="1.1.0",
+    lifespan=lifespan
+)
+
+# CORS configuration
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://mindbridge-frontend-06mf.onrender.com",
+    "https://mindbridge.onrender.com"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"https://.*\.onrender\.com",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Data Models
 class ChatMessage(BaseModel):
-    role: str # 'user' or 'assistant'
+    role: str  # 'user' or 'assistant'
     content: str
 
 class ChatRequest(BaseModel):
@@ -73,13 +99,13 @@ class ChatResponse(BaseModel):
     response: str
     coping_step: Optional[str] = None
     emotion_tag: str
-    risk_level: str # 'low', 'moderate', 'high'
+    risk_level: str  # 'low', 'moderate', 'high'
     is_fallback: bool = False
 
 class CallbackRequest(BaseModel):
     nickname: str
     preferred_time: str
-    mode: str # 'Phone' or 'Encrypted Chat' or 'Email'
+    mode: str  # 'Phone' or 'Encrypted Chat' or 'Email'
     topic: Optional[str] = "General Support"
     contact_value: str
 
@@ -91,11 +117,25 @@ class CallbackResponse(BaseModel):
 
 @app.get("/")
 def root():
+    gemini_key = os.getenv("GEMINI_API_KEY")
     return {
         "service": "MindBridge API",
         "status": "online",
+        "gemini_configured": bool(gemini_key and gemini_key.strip()),
+        "gemini_sdk_available": GENAI_SDK_AVAILABLE,
+        "model": "gemini-2.5-flash",
         "documentation": "/docs",
         "helpline_active": True
+    }
+
+@app.get("/api/health")
+def health_check():
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    return {
+        "status": "healthy",
+        "gemini_active": bool(gemini_key and gemini_key.strip()),
+        "mode": "gemini-live" if (gemini_key and gemini_key.strip()) else "local-intent-engine",
+        "database": "sqlite-ready"
     }
 
 @app.post("/api/chat", response_model=ChatResponse)
@@ -105,28 +145,74 @@ def chat_endpoint(payload: ChatRequest):
         raise HTTPException(status_code=400, detail="Message cannot be empty")
 
     intent = analyze_intent(user_msg)
-    # If crisis is detected, enforce immediate high risk safeguards
+    # If crisis is detected, enforce immediate high-risk safeguards directly
     if intent == "crisis":
         local_res = generate_local_response(user_msg, [m.model_dump() for m in payload.history])
         return ChatResponse(**local_res)
 
     gemini_key = os.getenv("GEMINI_API_KEY")
-    if gemini_key:
+    if gemini_key and gemini_key.strip():
+        # Motivational Interviewing (MI) System Instruction
+        system_instruction = (
+            "You are MindBridge, an empathetic, non-judgmental, calm digital companion "
+            "supporting individuals dealing with substance cravings, addiction recovery, emotional stress, "
+            "loneliness, and peer pressure. Use Motivational Interviewing: validate feelings, practice reflective "
+            "listening, never lecture, never scold, and offer one gentle, bite-sized coping suggestion. "
+            "Keep responses warm, concise (2 to 4 sentences), and psychologically safe. "
+            "Do not mention that you are an AI model unless asked."
+        )
+
+        # 1. Try modern google-genai SDK if available
+        if GENAI_SDK_AVAILABLE:
+            try:
+                client = genai.Client(api_key=gemini_key.strip())
+                
+                # Format multi-turn conversation history
+                contents = []
+                for h in payload.history[-6:]:
+                    role = "user" if h.role == "user" else "model"
+                    contents.append(
+                        genai_types.Content(
+                            role=role,
+                            parts=[genai_types.Part.from_text(text=h.content)]
+                        )
+                    )
+                contents.append(
+                    genai_types.Content(
+                        role="user",
+                        parts=[genai_types.Part.from_text(text=user_msg)]
+                    )
+                )
+
+                config = genai_types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    temperature=0.7,
+                    max_output_tokens=250,
+                )
+
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=contents,
+                    config=config
+                )
+
+                if response and response.text:
+                    local_helper = generate_local_response(user_msg)
+                    return ChatResponse(
+                        response=response.text.strip(),
+                        coping_step=local_helper["coping_step"],
+                        emotion_tag=local_helper["emotion_tag"],
+                        risk_level=local_helper["risk_level"],
+                        is_fallback=False
+                    )
+            except Exception as ex:
+                logger.error(f"Google GenAI SDK call failed: {ex}")
+
+        # 2. Direct HTTP REST fallback to Gemini 2.5 Flash API endpoint
         try:
-            # Motivational Interviewing (MI) System Prompt
-            system_instruction = (
-                "You are MindBridge, an empathetic, non-judgmental, calm digital companion "
-                "supporting individuals dealing with substance cravings, addiction recovery, emotional stress, "
-                "loneliness, and peer pressure. Use Motivational Interviewing: validate feelings, practice reflective "
-                "listening, never lecture, never scold, and offer one gentle, bite-sized coping suggestion. "
-                "Keep responses warm, concise (2 to 4 sentences), and psychologically safe. "
-                "Do not mention that you are an AI model unless asked."
-            )
-            
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+            import requests
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key.strip()}"
             contents = []
-            
-            # Add recent history
             for h in payload.history[-6:]:
                 contents.append({
                     "role": "user" if h.role == "user" else "model",
@@ -148,12 +234,10 @@ def chat_endpoint(payload: ChatRequest):
                 }
             }
 
-            resp = requests.post(url, json=req_body, timeout=6)
+            resp = requests.post(url, json=req_body, timeout=7)
             if resp.status_code == 200:
                 data = resp.json()
                 candidate_text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-                
-                # Derive tag & coping step
                 local_helper = generate_local_response(user_msg)
                 return ChatResponse(
                     response=candidate_text,
@@ -162,11 +246,13 @@ def chat_endpoint(payload: ChatRequest):
                     risk_level=local_helper["risk_level"],
                     is_fallback=False
                 )
+            else:
+                logger.error(f"Gemini REST API returned HTTP {resp.status_code}: {resp.text}")
         except Exception as ex:
-            # Fallback gracefully
-            print(f"Gemini API fallback triggered: {ex}")
+            logger.error(f"Gemini REST API error: {ex}")
 
-    # Fallback to local intelligent emotional engine
+    # Fallback to smart local emotional engine when key is missing or API call fails
+    logger.info("Using local emotional-intent fallback engine.")
     local_res = generate_local_response(user_msg, [m.model_dump() for m in payload.history])
     return ChatResponse(**local_res)
 
@@ -185,7 +271,7 @@ def request_callback(req: CallbackRequest):
         conn.commit()
         conn.close()
     except Exception as e:
-        print(f"Database insertion notice: {e}")
+        logger.error(f"Database insertion notice: {e}")
 
     return CallbackResponse(
         success=True,

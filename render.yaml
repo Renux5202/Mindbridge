@@ -9,6 +9,8 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.11
+      - key: GEMINI_API_KEY
+        sync: false
 
   # 2. React Vite Frontend Static Site
   - type: web
@@ -21,3 +23,9 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: mindbridge-backend
+          property: host
