@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Sparkles
 } from 'lucide-react';
+import { API_BASE_URL } from '../utils/api';
 
 const VERIFIED_HELPLINES = [
   {
@@ -139,7 +140,7 @@ export default function HelpView({ nickname }) {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/callback', {
+      const res = await fetch(`${API_BASE_URL}/api/callback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

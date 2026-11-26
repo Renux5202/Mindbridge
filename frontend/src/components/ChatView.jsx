@@ -14,6 +14,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { STORAGE_KEYS } from '../utils/storage';
+import { API_BASE_URL } from '../utils/api';
 
 const STARTER_PROMPTS = [
   { text: "I'm stressed and feeling an overwhelming urge to use", icon: Flame, tag: "Craving" },
@@ -72,7 +73,7 @@ export default function ChatView({ nickname, setActiveTab }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
