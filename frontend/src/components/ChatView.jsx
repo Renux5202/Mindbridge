@@ -15,12 +15,23 @@ import {
   ChevronDown,
   ChevronUp,
   BookOpen,
-  ArrowRight
+  ArrowRight,
+  HeartHandshake
 } from 'lucide-react';
 import { STORAGE_KEYS } from '../utils/storage';
 import { API_BASE_URL } from '../utils/api';
 
-// Curated recovery and psychological health questions with answers for instant local help
+// Natural things users frequently say to MindBridge
+const CONVERSATION_STARTERS = [
+  { text: "Hey! How can you help me?", icon: Smile, tag: "Friendly Hello" },
+  { text: "I'm having an urge right now and need help", icon: Flame, tag: "Urge to Use" },
+  { text: "My friends are pressuring me to drink/smoke", icon: Users, tag: "Peer Pressure" },
+  { text: "I had a slip yesterday and feel guilty", icon: AlertCircle, tag: "Relapse Guilt" },
+  { text: "I'm stressed out and overwhelmed", icon: CloudRain, tag: "Stress" },
+  { text: "I can't sleep and my mind is racing", icon: Sparkles, tag: "Insomnia" },
+  { text: "Feeling lonely and empty tonight", icon: HeartHandshake, tag: "Loneliness" }
+];
+
 const RECOVERY_QUESTIONS = [
   {
     category: "Cravings & Urges",
@@ -291,30 +302,25 @@ export default function ChatView({ nickname, setActiveTab }) {
       <div className="flex-1 overflow-y-auto py-4 space-y-4 pr-1">
         
         {/* Quick Question Chips (shown when chat is fresh) */}
-        {messages.length <= 2 && !showFaqDrawer && (
+        {messages.length <= 2 && (
           <div className="p-4 rounded-3xl bg-white dark:bg-[#18231E] border border-[#E3EDE8] dark:border-[#24352F] space-y-2.5 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-[#5C8979] dark:text-[#88BBA7] uppercase tracking-wider flex items-center gap-1.5">
-                <HelpCircle className="w-3.5 h-3.5" /> Common Questions People Ask
-              </p>
-              <button
-                onClick={() => setShowFaqDrawer(true)}
-                className="text-[11px] text-[#5C8979] hover:underline font-medium"
-              >
-                View all 10+ topics →
-              </button>
-            </div>
+            <p className="text-xs font-semibold text-[#5C8979] dark:text-[#88BBA7] uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" /> Tap What You Want To Say:
+            </p>
             <div className="flex flex-wrap gap-2">
-              {RECOVERY_QUESTIONS.slice(0, 5).map((item, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSend(item.q)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F3F7F5] dark:bg-[#202E28] hover:bg-[#E3EDE8] dark:hover:bg-[#283C34] text-xs text-[#395B4E] dark:text-[#C5DED4] transition-all text-left"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#5C8979]" />
-                  <span>{item.q}</span>
-                </button>
-              ))}
+              {CONVERSATION_STARTERS.map((item, idx) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => handleSend(item.text)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F3F7F5] dark:bg-[#202E28] hover:bg-[#E3EDE8] dark:hover:bg-[#283C34] text-xs text-[#395B4E] dark:text-[#C5DED4] transition-all text-left"
+                  >
+                    <Icon className="w-3.5 h-3.5 text-[#5C8979] shrink-0" />
+                    <span>{item.text}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}

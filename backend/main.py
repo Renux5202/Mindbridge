@@ -20,9 +20,9 @@ except ImportError:
     GENAI_SDK_AVAILABLE = False
 
 try:
-    from engine import generate_local_response, analyze_intent, CURATED_QA
+    from engine import generate_local_response, analyze_intent, CONVERSATIONAL_INTENTS
 except ImportError:
-    from backend.engine import generate_local_response, analyze_intent, CURATED_QA
+    from backend.engine import generate_local_response, analyze_intent, CONVERSATIONAL_INTENTS
 
 load_dotenv()
 
@@ -141,8 +141,8 @@ def health_check():
 @app.get("/api/qa")
 def get_curated_qa():
     return {
-        "count": len(CURATED_QA),
-        "questions": CURATED_QA
+        "count": len(CONVERSATIONAL_INTENTS),
+        "intents": [c["emotion_tag"] for c in CONVERSATIONAL_INTENTS]
     }
 
 @app.post("/api/chat", response_model=ChatResponse)
