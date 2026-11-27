@@ -136,16 +136,21 @@ export default function ChatView({ nickname, setActiveTab }) {
     setInput('');
     setIsLoading(true);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           message: text,
           nickname: nickname,
           history: newHistory.slice(-6).map(m => ({ role: m.role, content: m.content }))
         })
       });
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`Server returned ${response.status}`);
@@ -179,6 +184,7 @@ export default function ChatView({ nickname, setActiveTab }) {
       };
       setMessages(prev => [...prev, fallbackMsg]);
     } finally {
+      clearTimeout(timeoutId);
       setIsLoading(false);
     }
   };
