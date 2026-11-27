@@ -14,7 +14,7 @@ services:
 
   # 2. React Vite Frontend Static Site
   - type: web
-    name: mindbridge-frontend
+    name: mindbridgeapp
     runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
