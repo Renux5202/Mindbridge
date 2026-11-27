@@ -285,7 +285,7 @@ export const RECOVERY_KNOWLEDGE = [
     category: "Companion Introduction",
     priority: 15,
     patterns: [
-      /\b(who are you|what is mindbridge|what do you do|how are you|how can you help|what are you|are you an ai|are you human)\b/i
+      /\b(who are you|what is mindbridge|what do you do|how are you|how can you help|what are you|are you an ai|are you human|can you help( me)?|how to use this)\b/i
     ],
     answer: "I'm MindBridge, your anonymous companion against substance addiction and emotional distress. I'm here to listen, help you surf cravings, talk through stress or loneliness, and support your journey without any lectures or judgment. You can tell me how you feel, ask about recovery, or use the Urge SOS tools.",
     step: "Give your body a gentle stretch and drop your shoulders away from your ears.",

@@ -164,7 +164,7 @@ def chat_endpoint(payload: ChatRequest):
         return ChatResponse(**local_res)
 
     gemini_key = os.getenv("GEMINI_API_KEY")
-    if gemini_key and gemini_key.strip():
+    if gemini_key and gemini_key.strip().startswith("AIzaSy"):
         # Motivational Interviewing (MI) System Instruction
         system_instruction = (
             "You are MindBridge, an empathetic, non-judgmental, calm digital companion "
