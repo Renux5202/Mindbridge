@@ -24,7 +24,12 @@ try:
 except ImportError:
     from backend.engine import generate_local_response, analyze_intent, CONVERSATIONAL_INTENTS
 
-load_dotenv()
+# Load environment variables from backend/.env or root .env
+dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
+if os.path.exists(dotenv_path):
+    load_dotenv(dotenv_path)
+else:
+    load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
