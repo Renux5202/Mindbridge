@@ -2,77 +2,91 @@ import re
 import random
 from typing import Dict, List, Optional
 
-# COMPREHENSIVE CONVERSATIONAL & TOPICAL KNOWLEDGE BASE
-FAQ_TOPICS = [
+# 10 CORE CURATED QUESTIONS AND ANSWERS FOR SUBSTANCE ADDICTION & RECOVERY
+CORE_RECOVERY_QA = [
     {
-        "keywords": ["how long", "craving last", "urge last", "duration of craving", "how long do craving", "waves"],
-        "answer": "Most acute substance cravings peak within 3 to 5 minutes and subside naturally within 15 to 20 minutes if you don't feed them. Cravings operate like ocean waves—they crest, swell, and naturally dissolve. The technique of 'Urge Surfing' (observing the sensation without acting) allows your dopamine receptors to reset without giving in.",
-        "step": "Open the Urge SOS tab and practice the 10-Minute Urge Surf timer or Box Breathing to ride out the peak.",
-        "tag": "Craving Education"
+        "id": "craving_duration",
+        "question": "How long do drug or alcohol cravings usually last?",
+        "keywords": ["how long", "craving last", "urge last", "duration of craving", "how long do craving", "waves", "fade"],
+        "answer": "Most acute drug and alcohol cravings peak within 3 to 5 minutes and subside naturally within 15 to 20 minutes if you do not feed them. Cravings operate like ocean waves—they build up, crest, and naturally dissolve. The psychological technique of 'Urge Surfing' teaches you to sit with the physical sensation without giving in until the dopamine storm passes.",
+        "step": "Open the Urge SOS tab and run the 10-Minute Urge Surf countdown or do Box Breathing to ride out the crest.",
+        "tag": "Craving Science"
     },
     {
-        "keywords": ["ruin", "ruined", "slip", "relapse", "messed up", "all progress gone", "start over", "guilt", "shame"],
-        "answer": "No, you haven't ruined all your progress. A slip or relapse is an event, not a failure of who you are. The sober days you achieved, the mental rewiring, and the lessons you learned are still yours. Be compassionate with yourself, discard any remaining substance, and start fresh from this exact moment.",
+        "id": "relapse_progress",
+        "question": "I had a slip or relapse. Did I ruin all my progress?",
+        "keywords": ["ruin", "ruined", "slip", "relapse", "messed up", "all progress gone", "start over", "guilt", "shame", "failed"],
+        "answer": "No, absolutely not. A slip or lapse is an isolated event, not a failure of your character. The sober days you achieved, the physical healing, and the neural rewiring you built do not disappear because of a setback. Be gentle with yourself, discard any remaining substance immediately, avoid shame spirals, and analyze what environmental trigger led to the slip.",
         "step": "Throw away anything left right now, drink a glass of water, and write down the trigger in the Mood Tracker.",
         "tag": "Relapse Recovery"
     },
     {
-        "keywords": ["say no", "peer pressure", "party", "friends", "offered", "forcing me", "pressuring", "refuse"],
-        "answer": "You never have to justify choosing your health. Try simple, firm scripts: 1) 'I'm good with my soda tonight, I have an early morning.' 2) 'I'm on a health reset.' 3) 'Doctor told me to lay off for a bit.' Real friends will respect your boundary immediately. If people keep pressuring you, leaving the room is self-care, not rudeness.",
-        "step": "Keep a non-alcoholic drink physically in your hand so people are less likely to offer you anything.",
+        "id": "say_no_pressure",
+        "question": "How do I say 'No' to friends pressuring me to use?",
+        "keywords": ["say no", "peer pressure", "party", "friends", "offered", "forcing me", "pressuring", "refuse", "social"],
+        "answer": "You never owe anyone an explanation or debate regarding your personal health. Use direct, clear scripts: 1) 'I am good with my soda tonight, I have an early morning commitment.' 2) 'I am on a 30-day health reset.' 3) 'Doctor advised me to stay completely clear of alcohol/substances.' True friends will respect your boundary immediately. If anyone continues pushing, leaving the venue is self-protection, not rudeness.",
+        "step": "Always keep a non-alcoholic beverage physically in your hand so people are less likely to offer you a drink.",
         "tag": "Boundary Skills"
     },
     {
-        "keywords": ["cope", "stress", "anxiety", "work pressure", "exam", "overwhelm", "without drugs", "without drinking"],
-        "answer": "Substances provide a quick artificial shortcut to numb stress, but they cause a rebound spike in cortisol once they wear off. Healthy replacement coping focuses on calming your nervous system naturally: double-inhale physiological sighs, 5-4-3-2-1 sensory grounding, brisk physical walking, or taking a hot/cold shower.",
+        "id": "cope_stress_without_drugs",
+        "question": "I used drugs to cope with stress. How do I cope without them?",
+        "keywords": ["cope", "stress", "anxiety", "work pressure", "exam", "overwhelm", "without drugs", "without drinking", "relief"],
+        "answer": "Drugs and alcohol provide a quick, artificial shortcut to numb emotions, but they trigger a rebound surge of cortisol and anxiety once they wear off. Healthy replacement coping focuses on calming your parasympathetic nervous system naturally: double-inhale physiological sighs, 5-4-3-2-1 sensory grounding, brisk physical walking, or taking a cool shower.",
         "step": "Do the 5-4-3-2-1 Grounding exercise: Name 5 objects around you, touch 4 textures, and take 2 slow exhales.",
         "tag": "Stress Regulation"
     },
     {
-        "keywords": ["lonely", "bored", "alone at night", "quiet", "empty", "isolated", "nothing to do"],
-        "answer": "Loneliness and boredom are two of the biggest addiction triggers (part of the H.A.L.T. warning signs). When everything gets quiet, the brain screams for dopaminergic stimulation. Developing a structured evening wind-down routine—music, reading, journaling, or connecting with peer groups—safely fills the emotional void.",
-        "step": "Send a simple message to an old friend or family member ('Hey, thought of you! Hope you're doing well').",
+        "id": "lonely_boredom_urges",
+        "question": "I only get cravings when I am lonely or bored at night. Why?",
+        "keywords": ["lonely", "bored", "alone at night", "quiet", "empty", "isolated", "nothing to do", "insomnia", "night"],
+        "answer": "Loneliness and boredom are two of the strongest neurological addiction triggers. When the surrounding world goes quiet, the brain's reward pathway screams for dopaminergic stimulation. Developing a structured evening wind-down routine—ambient lighting, comfort music, journaling, reading, or connecting with peer groups—fills the emotional void safely.",
+        "step": "Send a simple message to an old friend or family member ('Hey, thought of you! Hope you are doing well').",
         "tag": "Loneliness Support"
     },
     {
-        "keywords": ["halt", "h.a.l.t", "hungry angry", "lonely tired"],
-        "answer": "H.A.L.T. stands for Hungry, Angry, Lonely, Tired. Research in addiction psychology shows that over 80% of sudden urges occur when your body or mind is in an unaddressed state of physical vulnerability. Whenever an intense urge strikes, ask yourself: 'Am I Hungry? Am I Angry? Am I Lonely? Am I Tired?' Solving the physical need usually dissolves the craving.",
-        "step": "Drink water, eat a nourishing snack, and take a 20-minute rest.",
+        "id": "halt_technique",
+        "question": "What is the H.A.L.T. method in addiction recovery?",
+        "keywords": ["halt", "h.a.l.t", "hungry angry", "lonely tired", "vulnerability"],
+        "answer": "H.A.L.T. stands for Hungry, Angry, Lonely, Tired. Clinical research shows that over 80% of sudden substance urges occur when the body or mind is in an unaddressed physical vulnerability state. Whenever a sudden craving strikes, ask yourself: 'Am I Hungry? Am I Angry? Am I Lonely? Am I Tired?' Solving the physical deficit usually dissolves the urge.",
+        "step": "Drink a tall glass of water, eat a healthy snack, and take a 20-minute rest.",
         "tag": "Relapse Prevention"
     },
     {
-        "keywords": ["withdrawal", "detox", "shaking", "sweating", "dangerous", "cold turkey"],
-        "answer": "Withdrawal symptoms vary depending on the substance and duration. Common signs include sweating, tremors, sleep disruption, and anxiety. Note: severe alcohol or sedative withdrawal can be medically dangerous—always seek medical supervision for safe detox.",
-        "step": "Call 14446 (National Drug Helpline) for free guidance on verified detox centers.",
+        "id": "withdrawal_safety",
+        "question": "What should I expect during physical withdrawal, and is it dangerous?",
+        "keywords": ["withdrawal", "detox", "shaking", "sweating", "dangerous", "cold turkey", "tremors"],
+        "answer": "Withdrawal symptoms vary depending on the substance, dosage, and duration of use. Common signs include sweating, restlessness, tremors, irritability, nausea, and intense cravings. Please note: severe alcohol or sedative/benzodiazepine withdrawal can be medically hazardous (causing seizures) and requires clinical oversight. Always speak with a healthcare professional or helpline before detoxing.",
+        "step": "Call the National Drug De-addiction Helpline at 14446 for free medical guidance on safe detox facilities.",
         "tag": "Detox Safety"
     },
     {
-        "keywords": ["tell family", "parents", "loved ones", "confess", "admit", "ask help family"],
-        "answer": "Opening up takes courage. Choose a calm, quiet moment when nobody is rushed or angry. You can say: 'I have been fighting a battle with substance use that is bigger than I can handle alone, and I want to get healthy. I am sharing this because I love you and need your support finding professional help.'",
-        "step": "If speaking aloud feels too scary, draft a short handwritten note or text message first.",
+        "id": "tell_family_help",
+        "question": "How do I tell my family or loved ones that I need help?",
+        "keywords": ["tell family", "parents", "loved ones", "confess", "admit", "ask help family", "scared to tell"],
+        "answer": "Admitting you are struggling takes immense courage. Choose a quiet, calm moment when neither you nor your family is rushed or upset. You can say: 'I have been fighting a battle with substance use that is bigger than I can handle alone, and I want to get healthy. I am sharing this because I love you and need your support finding professional help.'",
+        "step": "If speaking aloud is too overwhelming, write your thoughts in a short handwritten letter or message first.",
         "tag": "Family & Relationships"
     },
     {
-        "keywords": ["dopamine", "replacement", "habits", "alternatives", "natural high"],
-        "answer": "To rebalance dopamine naturally without chemicals, engage in activities that release sustained endorphins: 1) High-intensity exercise or brisk walking. 2) Cold showers. 3) Creative outlets like music, drawing, cooking, or coding. 4) Volunteering and pet care. 5) Community recovery peer groups.",
+        "id": "natural_dopamine",
+        "question": "What healthy habits can replace the dopamine from drugs or alcohol?",
+        "keywords": ["dopamine", "replacement", "habits", "alternatives", "natural high", "healthy habits"],
+        "answer": "Addiction hijacks the brain's dopamine reward loop. To restore natural dopamine sensitivity: 1) High-intensity cardio or brisk outdoor walks. 2) Cold water immersion or showers. 3) Creative hobbies like music, drawing, cooking, or coding. 4) Volunteering and spending time with pets. 5) Regular sleep schedules before 11 PM.",
         "step": "Check off your daily walk or breathing exercise in the Mood & Habits tracker right now.",
         "tag": "Positive Habits"
     },
     {
-        "keywords": ["helpline", "free", "cost", "14446", "14416", "charge"],
-        "answer": "Yes! Both 14446 (National Drug De-addiction Helpline) and 14416 (Tele-MANAS Mental Health Helpline) are 100% free and toll-free across India, operating 24 hours a day in multiple Indian languages.",
-        "step": "Go to the Helplines & Rehab tab to view direct one-click dials.",
+        "id": "free_helplines_india",
+        "question": "Are Indian de-addiction helplines like 14446 and 14416 free?",
+        "keywords": ["helpline", "free", "cost", "14446", "14416", "charge", "counselling free", "toll free"],
+        "answer": "Yes! Both 14446 (National Drug De-addiction Helpline by Ministry of Social Justice and Empowerment) and 14416 (Tele-MANAS Mental Health Helpline) are 100% free and toll-free across India. They operate 24 hours a day, 7 days a week, and offer confidential assistance in Hindi, English, and regional Indian languages.",
+        "step": "Go to the Helplines & Rehab tab to view direct one-click dials and verified treatment centers.",
         "tag": "Free Resources"
-    },
-    {
-        "keywords": ["cant sleep", "can't sleep", "insomnia", "awake", "middle of the night", "3am", "racing"],
-        "answer": "Late nights are when cravings and racing thoughts love to strike. First, take the pressure off: even resting quietly with your eyes closed restores your body. Don't stay in bed tossing and turning if it's stressing you out. Get up, get a glass of water, keep lights dim, and read something relaxing.",
-        "step": "Try Box Breathing (4 seconds in, 4 hold, 4 out, 4 hold) for 2 minutes to drop your heart rate.",
-        "tag": "Sleep & Calming"
     }
 ]
 
-# CONVERSATIONAL INTENTS (GREETINGS, EMOTIONS, CRAVINGS)
+# CONVERSATIONAL INTENTS (GREETINGS, CASUAL TALK, CRISIS)
 CONVERSATIONAL_INTENTS = [
     # 1. Greetings
     {
@@ -158,25 +172,44 @@ def analyze_intent(message: str) -> str:
 def generate_local_response(message: str, history: List[Dict[str, str]] = None) -> Dict[str, str]:
     msg_clean = message.lower().strip()
 
-    # 1. First priority: Check FAQ topics with keyword density
-    best_faq = None
-    max_matches = 0
-    for faq in FAQ_TOPICS:
-        matches = sum(1 for kw in faq["keywords"] if kw in msg_clean)
-        if matches > max_matches:
-            max_matches = matches
-            best_faq = faq
-
-    if best_faq and max_matches >= 1:
+    # 1. First priority: Check Life-Safety Crisis
+    if analyze_intent(message) == "crisis":
         return {
-            "response": best_faq["answer"],
-            "coping_step": best_faq["step"],
-            "emotion_tag": best_faq["tag"],
+            "response": "I hear how deeply painful things feel right now. Please know you are not alone, and your life has immense value. Please pause and connect with trained counselors right now.",
+            "coping_step": "Call Tele-MANAS at 14416 or National Drug Helpline at 14446 immediately (24/7 Toll-Free).",
+            "emotion_tag": "Crisis Alert",
+            "risk_level": "high",
+            "is_fallback": True
+        }
+
+    # 2. Second priority: Match against the 10 Core Curated Q&As
+    best_qa = None
+    max_score = 0
+    for qa in CORE_RECOVERY_QA:
+        # Check direct question substring
+        q_clean = qa["question"].lower()
+        score = 0
+        if msg_clean in q_clean or q_clean in msg_clean:
+            score += 15
+
+        for kw in qa["keywords"]:
+            if kw in msg_clean:
+                score += 3
+
+        if score > max_score and score >= 3:
+            max_score = score
+            best_qa = qa
+
+    if best_qa:
+        return {
+            "response": best_qa["answer"],
+            "coping_step": best_qa["step"],
+            "emotion_tag": best_qa["tag"],
             "risk_level": "low",
             "is_fallback": True
         }
 
-    # 2. Second priority: Check conversational intents (greetings, feelings, cravings)
+    # 3. Third priority: Conversational greetings, who are you, cravings, gratitude
     for item in CONVERSATIONAL_INTENTS:
         for pat in item["patterns"]:
             if re.search(pat, msg_clean):
@@ -188,7 +221,7 @@ def generate_local_response(message: str, history: List[Dict[str, str]] = None) 
                     "is_fallback": True
                 }
 
-    # 3. Empathetic open-ended conversational fallback
+    # 4. Open-ended empathetic response
     default_replies = [
         "Thank you for sharing that with me. I'm listening closely. Taking time to express what's going on inside rather than numbing it is a really brave step. Can you tell me a little more about how you're feeling right now?",
         "I hear you. Recovery and healing aren't straight lines—every single day you choose to pause and reflect is a victory. What feels like the heaviest thing on your mind right now?",

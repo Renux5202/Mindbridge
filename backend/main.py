@@ -20,9 +20,9 @@ except ImportError:
     GENAI_SDK_AVAILABLE = False
 
 try:
-    from engine import generate_local_response, analyze_intent, CONVERSATIONAL_INTENTS
+    from engine import generate_local_response, analyze_intent, CORE_RECOVERY_QA
 except ImportError:
-    from backend.engine import generate_local_response, analyze_intent, CONVERSATIONAL_INTENTS
+    from backend.engine import generate_local_response, analyze_intent, CORE_RECOVERY_QA
 
 # Load environment variables from backend/.env or root .env
 dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
@@ -147,8 +147,8 @@ def health_check():
 @app.get("/api/qa")
 def get_curated_qa():
     return {
-        "count": len(CONVERSATIONAL_INTENTS),
-        "intents": [c["emotion_tag"] for c in CONVERSATIONAL_INTENTS]
+        "count": len(CORE_RECOVERY_QA),
+        "questions": CORE_RECOVERY_QA
     }
 
 @app.post("/api/chat", response_model=ChatResponse)
