@@ -11,17 +11,67 @@ import {
   Flame, 
   Users, 
   CloudRain,
-  ExternalLink
+  HelpCircle,
+  ChevronDown,
+  ChevronUp,
+  BookOpen,
+  ArrowRight
 } from 'lucide-react';
 import { STORAGE_KEYS } from '../utils/storage';
 import { API_BASE_URL } from '../utils/api';
 
-const STARTER_PROMPTS = [
-  { text: "I'm stressed and feeling an overwhelming urge to use", icon: Flame, tag: "Craving" },
-  { text: "Feeling pressured by friends at a party", icon: Users, tag: "Peer Pressure" },
-  { text: "Just feeling lonely and empty tonight", icon: CloudRain, tag: "Loneliness" },
-  { text: "I had a slip/relapse and feel terrible about myself", icon: AlertCircle, tag: "Relapse Guilt" },
-  { text: "Can you help me practice saying 'No' politely?", icon: Smile, tag: "Boundary Practice" }
+// Curated recovery and psychological health questions with answers for instant local help
+const RECOVERY_QUESTIONS = [
+  {
+    category: "Cravings & Urges",
+    q: "How long do drug or alcohol cravings usually last?",
+    short: "Cravings peak within 3-5 minutes and fade in 15-20 minutes."
+  },
+  {
+    category: "Relapse & Guilt",
+    q: "I had a slip or relapse. Did I ruin all my progress?",
+    short: "No. A lapse is an event, not a failure. Your neural progress is preserved."
+  },
+  {
+    category: "Peer Pressure",
+    q: "How do I say 'No' to friends pressuring me to use?",
+    short: "Use 'Broken Record' or 'Delay & Exit' scripts without guilt."
+  },
+  {
+    category: "Stress & Anxiety",
+    q: "I used drugs to cope with stress. How do I cope without them?",
+    short: "Parasympathetic breathing, physiological sighs, and 5-4-3-2-1 grounding."
+  },
+  {
+    category: "Loneliness & Triggers",
+    q: "I only get cravings when I am lonely or bored at night. Why?",
+    short: "H.A.L.T. triggers: brain seeks stimulation when the environment goes quiet."
+  },
+  {
+    category: "Relapse Prevention",
+    q: "What is the H.A.L.T. method in addiction recovery?",
+    short: "Hungry, Angry, Lonely, Tired—check physical needs before reacting to urges."
+  },
+  {
+    category: "Detox & Safety",
+    q: "What should I expect during physical withdrawal, and is it dangerous?",
+    short: "Symptoms vary; severe alcohol/sedative withdrawal requires medical supervision."
+  },
+  {
+    category: "Relationships",
+    q: "How do I tell my family or loved ones that I need help?",
+    short: "Choose a calm time and share that you want to heal with their support."
+  },
+  {
+    category: "Habit Building",
+    q: "What healthy habits can replace the dopamine from drugs or alcohol?",
+    short: "Vigorous exercise, cold showers, creative hobbies, and peer connection."
+  },
+  {
+    category: "Privacy & Helplines",
+    q: "Are Indian de-addiction helplines like 14446 and 14416 free?",
+    short: "Yes, 100% toll-free, 24/7 confidential counseling in multiple languages."
+  }
 ];
 
 export default function ChatView({ nickname, setActiveTab }) {
@@ -38,7 +88,7 @@ export default function ChatView({ nickname, setActiveTab }) {
       {
         id: 'welcome-msg',
         role: 'assistant',
-        content: `Hello ${nickname}. Welcome to MindBridge. I am your quiet, safe companion. Whatever you are feeling right now—whether it's heavy stress, an urge calling out, or feeling alone—you can share it freely here. No judgment, ever.`,
+        content: `Hello ${nickname}. Welcome to MindBridge. I am your safe, confidential companion. You can ask me any question about cravings, relapse, peer pressure, or withdrawal—or click any of the frequent questions below for instant guidance.`,
         coping_step: "Take one gentle, slow breath and unclench your jaw.",
         emotion_tag: "Welcome",
         risk_level: "low",
@@ -49,6 +99,8 @@ export default function ChatView({ nickname, setActiveTab }) {
 
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showFaqDrawer, setShowFaqDrawer] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -102,7 +154,6 @@ export default function ChatView({ nickname, setActiveTab }) {
       setMessages(prev => [...prev, botMsg]);
     } catch (err) {
       console.warn("Using smart client resilience fallback:", err);
-      // Fallback in case backend server is unreachable
       const fallbackMsg = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -125,7 +176,7 @@ export default function ChatView({ nickname, setActiveTab }) {
         {
           id: Date.now().toString(),
           role: 'assistant',
-          content: `Fresh page, ${nickname}. How can I support you right now?`,
+          content: `Fresh page, ${nickname}. Ask me anything about recovery, coping with triggers, or managing an urge.`,
           emotion_tag: "Ready",
           risk_level: "low",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -135,6 +186,12 @@ export default function ChatView({ nickname, setActiveTab }) {
       localStorage.setItem(STORAGE_KEYS.CHAT_HISTORY, JSON.stringify(initial));
     }
   };
+
+  const filteredQuestions = selectedCategory === 'All' 
+    ? RECOVERY_QUESTIONS 
+    : RECOVERY_QUESTIONS.filter(q => q.category === selectedCategory);
+
+  const categories = ['All', ...new Set(RECOVERY_QUESTIONS.map(q => q.category))];
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 flex flex-col h-[calc(100vh-5rem)]">
@@ -151,44 +208,113 @@ export default function ChatView({ nickname, setActiveTab }) {
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             </h2>
             <p className="text-xs text-[#637971] dark:text-[#99AEA3]">
-              Compassionate, non-judgmental guidance for cravings and emotional distress
+              Non-judgmental answers to your questions on addiction, cravings, and recovery
             </p>
           </div>
         </div>
 
-        <button
-          onClick={handleClearChat}
-          className="text-xs text-[#7A9188] hover:text-[#395B4E] dark:hover:text-[#9DD1BE] flex items-center gap-1 p-2 rounded-lg hover:bg-[#E3EDE8]/50 dark:hover:bg-[#1C2924] transition-colors"
-          title="Clear current chat"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Reset Chat</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowFaqDrawer(!showFaqDrawer)}
+            className="text-xs text-[#395B4E] dark:text-[#9DD1BE] font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#E3EDE8] dark:bg-[#1D2C25] hover:bg-[#D5E4DC] dark:hover:bg-[#253930] transition-colors"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Questions Library</span>
+            {showFaqDrawer ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+
+          <button
+            onClick={handleClearChat}
+            className="text-xs text-[#7A9188] hover:text-[#395B4E] dark:hover:text-[#9DD1BE] flex items-center gap-1 p-2 rounded-lg hover:bg-[#E3EDE8]/50 dark:hover:bg-[#1C2924] transition-colors"
+            title="Clear current chat"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Reset</span>
+          </button>
+        </div>
       </div>
+
+      {/* Expandable Frequent Questions Drawer */}
+      {showFaqDrawer && (
+        <div className="mt-2 p-4 rounded-3xl bg-white dark:bg-[#18231E] border border-[#D7E5DF] dark:border-[#2C4037] shadow-sm animate-in fade-in slide-in-from-top-2 duration-200 space-y-3 shrink-0 max-h-64 overflow-y-auto">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#395B4E] dark:text-[#9DD1BE] uppercase tracking-wider flex items-center gap-1.5">
+              <HelpCircle className="w-3.5 h-3.5 text-[#5C8979]" /> Frequent Recovery Questions (Click to Ask)
+            </span>
+            <span className="text-[11px] text-[#7A9188]">{filteredQuestions.length} Topics</span>
+          </div>
+
+          {/* Category Pills */}
+          <div className="flex flex-wrap gap-1.5">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                  selectedCategory === cat
+                    ? 'bg-[#5C8979] text-white shadow-2xs'
+                    : 'bg-[#F3F7F5] dark:bg-[#202E28] text-[#556961] dark:text-[#A7BCB3] hover:bg-[#E3EDE8]'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Question Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+            {filteredQuestions.map((item, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  handleSend(item.q);
+                  setShowFaqDrawer(false);
+                }}
+                className="p-2.5 rounded-2xl bg-[#F7F9F8] dark:bg-[#15201B] border border-[#E3EDE8] dark:border-[#24352F] hover:border-[#5C8979] text-left transition-all group flex flex-col justify-between"
+              >
+                <div className="flex items-start justify-between gap-1">
+                  <span className="text-xs font-semibold text-[#212928] dark:text-[#E2EBE6] group-hover:text-[#5C8979] leading-snug">
+                    {item.q}
+                  </span>
+                  <ArrowRight className="w-3 h-3 text-[#5C8979] shrink-0 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" />
+                </div>
+                <span className="text-[10px] text-[#7A9188] dark:text-[#88A396] mt-1 line-clamp-1">
+                  {item.short}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Messages Scroll Area */}
       <div className="flex-1 overflow-y-auto py-4 space-y-4 pr-1">
         
-        {/* Starter Chips */}
-        {messages.length <= 2 && (
-          <div className="p-4 rounded-2xl bg-white dark:bg-[#18231E] border border-[#E3EDE8] dark:border-[#24352F] space-y-2.5">
-            <p className="text-xs font-semibold text-[#5C8979] dark:text-[#88BBA7] uppercase tracking-wider">
-              Quick Starter Prompts
-            </p>
+        {/* Quick Question Chips (shown when chat is fresh) */}
+        {messages.length <= 2 && !showFaqDrawer && (
+          <div className="p-4 rounded-3xl bg-white dark:bg-[#18231E] border border-[#E3EDE8] dark:border-[#24352F] space-y-2.5 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-[#5C8979] dark:text-[#88BBA7] uppercase tracking-wider flex items-center gap-1.5">
+                <HelpCircle className="w-3.5 h-3.5" /> Common Questions People Ask
+              </p>
+              <button
+                onClick={() => setShowFaqDrawer(true)}
+                className="text-[11px] text-[#5C8979] hover:underline font-medium"
+              >
+                View all 10+ topics →
+              </button>
+            </div>
             <div className="flex flex-wrap gap-2">
-              {STARTER_PROMPTS.map((prompt, idx) => {
-                const Icon = prompt.icon;
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => handleSend(prompt.text)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F3F7F5] dark:bg-[#202E28] hover:bg-[#E3EDE8] dark:hover:bg-[#283C34] text-xs text-[#395B4E] dark:text-[#C5DED4] transition-all text-left"
-                  >
-                    <Icon className="w-3.5 h-3.5 text-[#5C8979] shrink-0" />
-                    <span>{prompt.text}</span>
-                  </button>
-                );
-              })}
+              {RECOVERY_QUESTIONS.slice(0, 5).map((item, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleSend(item.q)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F3F7F5] dark:bg-[#202E28] hover:bg-[#E3EDE8] dark:hover:bg-[#283C34] text-xs text-[#395B4E] dark:text-[#C5DED4] transition-all text-left"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#5C8979]" />
+                  <span>{item.q}</span>
+                </button>
+              ))}
             </div>
           </div>
         )}
@@ -223,7 +349,7 @@ export default function ChatView({ nickname, setActiveTab }) {
                   <div className="mt-3 p-2.5 rounded-xl bg-[#F3F7F5] dark:bg-[#1F2E27] border border-[#DEECE5] dark:border-[#293F34] flex items-start gap-2 text-xs text-[#315245] dark:text-[#BBDCD0]">
                     <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-semibold block">Gentle Step:</span>
+                      <span className="font-semibold block">Recommended Action:</span>
                       <span>{msg.coping_step}</span>
                     </div>
                   </div>
@@ -293,7 +419,7 @@ export default function ChatView({ nickname, setActiveTab }) {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type how you're feeling (e.g. 'Craving is really intense right now')..."
+            placeholder="Ask a question (e.g. 'How long do cravings last?', 'I had a slip', 'How to say no')..."
             className="flex-1 px-4 py-2 text-sm bg-transparent border-0 focus:outline-hidden text-[#212928] dark:text-[#E2EBE6] placeholder-[#8EA39A]"
           />
           <button

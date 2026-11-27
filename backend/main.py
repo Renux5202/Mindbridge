@@ -20,9 +20,9 @@ except ImportError:
     GENAI_SDK_AVAILABLE = False
 
 try:
-    from engine import generate_local_response, analyze_intent
+    from engine import generate_local_response, analyze_intent, CURATED_QA
 except ImportError:
-    from backend.engine import generate_local_response, analyze_intent
+    from backend.engine import generate_local_response, analyze_intent, CURATED_QA
 
 load_dotenv()
 
@@ -136,6 +136,13 @@ def health_check():
         "gemini_active": bool(gemini_key and gemini_key.strip()),
         "mode": "gemini-live" if (gemini_key and gemini_key.strip()) else "local-intent-engine",
         "database": "sqlite-ready"
+    }
+
+@app.get("/api/qa")
+def get_curated_qa():
+    return {
+        "count": len(CURATED_QA),
+        "questions": CURATED_QA
     }
 
 @app.post("/api/chat", response_model=ChatResponse)
