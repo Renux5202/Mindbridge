@@ -203,7 +203,7 @@ def chat_endpoint(payload: ChatRequest):
                 )
 
                 response = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="gemini-3.8-flash",
                     contents=contents,
                     config=config
                 )
@@ -220,48 +220,49 @@ def chat_endpoint(payload: ChatRequest):
             except Exception as ex:
                 logger.error(f"Google GenAI SDK call failed: {ex}")
 
-        # 2. Direct HTTP REST fallback to Gemini 2.5 Flash API endpoint
-        try:
-            import requests
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key.strip()}"
-            contents = []
-            for h in payload.history[-6:]:
+        # 2. Direct HTTP REST to Gemini 3.8 Flash (with fallback to gemini-flash-latest)
+        for model_name in ["gemini-3.8-flash", "gemini-flash-latest"]:
+            try:
+                import requests
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key.strip()}"
+                contents = []
+                for h in payload.history[-6:]:
+                    contents.append({
+                        "role": "user" if h.role == "user" else "model",
+                        "parts": [{"text": h.content}]
+                    })
                 contents.append({
-                    "role": "user" if h.role == "user" else "model",
-                    "parts": [{"text": h.content}]
+                    "role": "user",
+                    "parts": [{"text": user_msg}]
                 })
-            contents.append({
-                "role": "user",
-                "parts": [{"text": user_msg}]
-            })
 
-            req_body = {
-                "contents": contents,
-                "systemInstruction": {
-                    "parts": [{"text": system_instruction}]
-                },
-                "generationConfig": {
-                    "temperature": 0.7,
-                    "maxOutputTokens": 250
+                req_body = {
+                    "contents": contents,
+                    "systemInstruction": {
+                        "parts": [{"text": system_instruction}]
+                    },
+                    "generationConfig": {
+                        "temperature": 0.7,
+                        "maxOutputTokens": 250
+                    }
                 }
-            }
 
-            resp = requests.post(url, json=req_body, timeout=7)
-            if resp.status_code == 200:
-                data = resp.json()
-                candidate_text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-                local_helper = generate_local_response(user_msg)
-                return ChatResponse(
-                    response=candidate_text,
-                    coping_step=local_helper["coping_step"],
-                    emotion_tag=local_helper["emotion_tag"],
-                    risk_level=local_helper["risk_level"],
-                    is_fallback=False
-                )
-            else:
-                logger.error(f"Gemini REST API returned HTTP {resp.status_code}: {resp.text}")
-        except Exception as ex:
-            logger.error(f"Gemini REST API error: {ex}")
+                resp = requests.post(url, json=req_body, timeout=12)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    candidate_text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    local_helper = generate_local_response(user_msg)
+                    return ChatResponse(
+                        response=candidate_text,
+                        coping_step=local_helper["coping_step"],
+                        emotion_tag=local_helper["emotion_tag"],
+                        risk_level=local_helper["risk_level"],
+                        is_fallback=False
+                    )
+                else:
+                    logger.error(f"Gemini REST API ({model_name}) returned HTTP {resp.status_code}: {resp.text}")
+            except Exception as ex:
+                logger.error(f"Gemini REST API error on {model_name}: {ex}")
 
     # Fallback to smart local emotional engine when key is missing or API call fails
     logger.info("Using local emotional-intent fallback engine.")
