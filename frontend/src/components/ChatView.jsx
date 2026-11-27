@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { STORAGE_KEYS } from '../utils/storage';
 import { API_BASE_URL } from '../utils/api';
+import { getClientFallbackResponse } from '../utils/qaEngine';
 
 // Natural things users frequently say to MindBridge
 const CONVERSATION_STARTERS = [
@@ -165,13 +166,14 @@ export default function ChatView({ nickname, setActiveTab }) {
       setMessages(prev => [...prev, botMsg]);
     } catch (err) {
       console.warn("Using smart client resilience fallback:", err);
+      const matched = getClientFallbackResponse(text);
       const fallbackMsg = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "I'm right here with you. Cravings and intense emotions are like storm waves—they crest, peak, and naturally begin to subside after 15 to 20 minutes if we ride them out without acting. You are stronger than this single moment.",
-        coping_step: "Drink a glass of cold water and try the Box Breathing tool in the Urge SOS tab.",
-        emotion_tag: "Support & Grounding",
-        risk_level: "low",
+        content: matched.content,
+        coping_step: matched.coping_step,
+        emotion_tag: matched.emotion_tag,
+        risk_level: matched.risk_level,
         is_fallback: true,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };

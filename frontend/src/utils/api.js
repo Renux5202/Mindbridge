@@ -1,5 +1,4 @@
 // Base API URL for MindBridge
-// Checks import.meta.env.VITE_API_URL first (set in production or .env)
-// Falls back to empty string in development so Vite proxy handles /api
-// or uses localhost:8000 if directly addressed.
-export const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+// Points to the live Render backend Web Service URL by default.
+// In local development, if VITE_API_URL is set or localhost proxy is used, it respects it.
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://mindbridge-backend-hgtn.onrender.com';
