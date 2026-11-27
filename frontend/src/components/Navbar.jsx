@@ -11,13 +11,51 @@ import {
   Activity, 
   HelpCircle,
   Menu,
-  X
+  X,
+  Download
 } from 'lucide-react';
 import { quickExit, wipeAllSessionData } from '../utils/storage';
 
 export default function Navbar({ activeTab, setActiveTab, nickname, setNickname, theme, toggleTheme }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showWipeModal, setShowWipeModal] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  // Listen for PWA beforeinstallprompt event
+  useEffect(() => {
+    const handleBeforeInstall = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setInstallPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setIsInstalled(true);
+    }
+    setInstallPrompt(null);
+  };
 
   // Esc key listener for Quick Exit
   useEffect(() => {
@@ -68,7 +106,21 @@ export default function Navbar({ activeTab, setActiveTab, nickname, setNickname,
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-1.5">
-              {navItems.map((item) => {
+              {/* Mobile Install App Button */}
+            {installPrompt && !isInstalled && (
+              <button
+                onClick={() => {
+                  handleInstallClick();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 mb-2 rounded-xl bg-[#5C8979] text-white text-xs font-semibold shadow-xs"
+              >
+                <Download className="w-4 h-4" />
+                <span>Install MindBridge App on Device</span>
+              </button>
+            )}
+
+            {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
                 return (
@@ -101,6 +153,18 @@ export default function Navbar({ activeTab, setActiveTab, nickname, setNickname,
                 <ShieldCheck className="w-3.5 h-3.5 text-[#5C8979]" />
                 <span className="font-mono text-[11px] font-medium">{nickname}</span>
               </div>
+
+              {/* Optional Install App Button (Desktop & Mobile) */}
+              {installPrompt && !isInstalled && (
+                <button
+                  onClick={handleInstallClick}
+                  title="Install MindBridge App"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#5C8979] hover:bg-[#4A7364] text-white text-xs font-semibold shadow-xs transition-all animate-in fade-in"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Install App</span>
+                </button>
+              )}
 
               {/* Theme Toggle */}
               <button
@@ -154,6 +218,20 @@ export default function Navbar({ activeTab, setActiveTab, nickname, setNickname,
               </span>
               <span className="font-mono font-semibold text-[#395B4E] dark:text-[#88BBA7]">{nickname}</span>
             </div>
+
+            {/* Mobile Install App Button */}
+            {installPrompt && !isInstalled && (
+              <button
+                onClick={() => {
+                  handleInstallClick();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 mb-2 rounded-xl bg-[#5C8979] text-white text-xs font-semibold shadow-xs"
+              >
+                <Download className="w-4 h-4" />
+                <span>Install MindBridge App on Device</span>
+              </button>
+            )}
 
             {navItems.map((item) => {
               const Icon = item.icon;
